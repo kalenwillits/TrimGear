@@ -89,7 +89,7 @@ void TrimController::adjust_trim(trimgear::constants::TrimAxis axis, bool increa
     float new_trim = current_trim + adjustment;
     
     // Clamp trim values to reasonable bounds (-1.0 to 1.0)
-    new_trim = std::max(-1.0f, std::min(1.0f, new_trim));
+    new_trim = std::max<float>(-1.0f, std::min<float>(1.0f, new_trim));
     
     // Set the new trim value
     XPLMSetDataf(axis_data.dataref, new_trim);
