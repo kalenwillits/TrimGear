@@ -204,6 +204,7 @@ message(STATUS "Installation: Run 'make install' or 'cmake --build . --target in
 message(STATUS "==========================")
 
 # Add install target for easier deployment
+# This creates a proper X-Plane plugin folder structure
 install(TARGETS trimgear
     RUNTIME DESTINATION "TrimGear"
     LIBRARY DESTINATION "TrimGear"
