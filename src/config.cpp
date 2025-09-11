@@ -18,8 +18,8 @@ void Config::reset_to_defaults() {
     }
 }
 
-bool Config::load_config(const std::string& aircraft_id) {
-    std::string config_path = get_config_file_path(aircraft_id);
+bool Config::load_config() {
+    std::string config_path = get_config_file_path();
     
     std::ifstream config_file(config_path);
     if (!config_file.is_open()) {
@@ -45,8 +45,8 @@ bool Config::load_config(const std::string& aircraft_id) {
     return true;
 }
 
-bool Config::save_config(const std::string& aircraft_id) const {
-    std::string config_path = get_config_file_path(aircraft_id);
+bool Config::save_config() const {
+    std::string config_path = get_config_file_path();
     
     // Create directory if it doesn't exist
     std::filesystem::path config_file_path(config_path);
@@ -119,7 +119,7 @@ std::string Config::get_aircraft_directory() const {
     return aircraft_path;
 }
 
-std::string Config::get_config_file_path(const std::string& /* aircraft_id */) const {
+std::string Config::get_config_file_path() const {
     std::string aircraft_dir = get_aircraft_directory();
     if (aircraft_dir.empty()) {
         return "TrimGear.cfg"; // Fallback to current directory
