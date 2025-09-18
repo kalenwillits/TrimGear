@@ -19,15 +19,19 @@ public:
     int get_gear_setting(trimgear::constants::TrimAxis axis) const;
     float get_gear_value(trimgear::constants::TrimAxis axis) const;
 
+    void set_axis_enabled(trimgear::constants::TrimAxis axis, bool enabled);
+    bool get_axis_enabled(trimgear::constants::TrimAxis axis) const;
+
 private:
     struct TrimAxisData {
         XPLMDataRef dataref;
         int gear_index;
         float gear_value;
+        bool enabled;
         const char* dataref_name;
     };
 
-    std::array<TrimAxisData, 3> m_trim_axes;
+    std::array<TrimAxisData, static_cast<std::size_t>(trimgear::constants::TrimAxis::COUNT)> m_trim_axes;
     bool m_initialized;
 
     void update_gear_value(trimgear::constants::TrimAxis axis);

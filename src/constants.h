@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace trimgear {
 namespace constants {
 
@@ -14,12 +16,27 @@ constexpr float GEAR_SETTINGS[] = {
 constexpr int NUM_GEAR_SETTINGS = sizeof(GEAR_SETTINGS) / sizeof(GEAR_SETTINGS[0]);
 constexpr int DEFAULT_GEAR_INDEX = 2; // 0.01f as default
 
+// Menu text buffer size for safe string formatting
+constexpr size_t MENU_TEXT_BUFFER_SIZE = 64;
+
 // Menu item IDs
 enum MenuItems {
     MENU_RELOAD_CONFIG = 1000,
-    MENU_PITCH_GEAR_START = 1100,
-    MENU_ROLL_GEAR_START = 1200,
-    MENU_RUDDER_GEAR_START = 1300
+
+    // Pitch trim controls
+    MENU_PITCH_GEAR_UP = 1100,
+    MENU_PITCH_ENABLE_DISABLE = 1101,
+    MENU_PITCH_GEAR_DOWN = 1102,
+
+    // Roll trim controls
+    MENU_ROLL_GEAR_UP = 1200,
+    MENU_ROLL_ENABLE_DISABLE = 1201,
+    MENU_ROLL_GEAR_DOWN = 1202,
+
+    // Rudder trim controls
+    MENU_RUDDER_GEAR_UP = 1300,
+    MENU_RUDDER_ENABLE_DISABLE = 1301,
+    MENU_RUDDER_GEAR_DOWN = 1302
 };
 
 // Trim axes

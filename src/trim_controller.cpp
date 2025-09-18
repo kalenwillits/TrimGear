@@ -8,23 +8,26 @@ TrimController::TrimController()
 {
     // Initialize trim axes data
     m_trim_axes[static_cast<std::size_t>(trimgear::constants::TrimAxis::PITCH)] = {
-        nullptr, 
-        trimgear::constants::DEFAULT_GEAR_INDEX, 
+        nullptr,
+        trimgear::constants::DEFAULT_GEAR_INDEX,
         trimgear::constants::GEAR_SETTINGS[trimgear::constants::DEFAULT_GEAR_INDEX],
+        true, // enabled by default
         "sim/flightmodel/controls/elv_trim"
     };
-    
+
     m_trim_axes[static_cast<std::size_t>(trimgear::constants::TrimAxis::ROLL)] = {
-        nullptr, 
-        trimgear::constants::DEFAULT_GEAR_INDEX, 
+        nullptr,
+        trimgear::constants::DEFAULT_GEAR_INDEX,
         trimgear::constants::GEAR_SETTINGS[trimgear::constants::DEFAULT_GEAR_INDEX],
+        true, // enabled by default
         "sim/flightmodel/controls/ail_trim"
     };
-    
+
     m_trim_axes[static_cast<std::size_t>(trimgear::constants::TrimAxis::RUDDER)] = {
-        nullptr, 
-        trimgear::constants::DEFAULT_GEAR_INDEX, 
+        nullptr,
+        trimgear::constants::DEFAULT_GEAR_INDEX,
         trimgear::constants::GEAR_SETTINGS[trimgear::constants::DEFAULT_GEAR_INDEX],
+        true, // enabled by default
         "sim/flightmodel/controls/rud_trim"
     };
 }
@@ -77,8 +80,8 @@ void TrimController::adjust_trim(trimgear::constants::TrimAxis axis, bool increa
     }
 
     TrimAxisData& axis_data = m_trim_axes[axis_index];
-    if (!axis_data.dataref) {
-        return;
+    if (!axis_data.dataref || !axis_data.enabled) {
+        return; // Skip if axis is disabled
     }
 
     // Get current trim value
@@ -145,6 +148,32 @@ float TrimController::get_gear_value(trimgear::constants::TrimAxis axis) const {
     }
     
     return m_trim_axes[axis_index].gear_value;
+}
+
+void TrimController::set_axis_enabled(trimgear::constants::TrimAxis axis, bool enabled) {
+    std::size_t axis_index = static_cast<std::size_t>(axis);
+    if (axis_index >= m_trim_axes.size()) {
+        return;
+    }
+
+    m_trim_axes[axis_index].enabled = enabled;
+
+    // Debug output
+    std::string log_msg = "TrimGear: ";
+    log_msg += enabled ? "Enabled" : "Disabled";
+    log_msg += " axis ";
+    log_msg += m_trim_axes[axis_index].dataref_name;
+    log_msg += "\n";
+    XPLMDebugString(log_msg.c_str());
+}
+
+bool TrimController::get_axis_enabled(trimgear::constants::TrimAxis axis) const {
+    std::size_t axis_index = static_cast<std::size_t>(axis);
+    if (axis_index >= m_trim_axes.size()) {
+        return true; // Default to enabled
+    }
+
+    return m_trim_axes[axis_index].enabled;
 }
 
 void TrimController::update_gear_value(trimgear::constants::TrimAxis axis) {

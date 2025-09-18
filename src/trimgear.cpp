@@ -23,10 +23,21 @@ static std::unique_ptr<TrimController> g_trim_controller;
 
 // Aircraft tracking for config reloading
 
-// Menu tracking
-static std::vector<int> g_pitch_menu_items;
-static std::vector<int> g_roll_menu_items;
-static std::vector<int> g_rudder_menu_items;
+// Menu tracking - for simplified menu structure
+static int g_pitch_header_item = -1;
+static int g_pitch_gear_up_item = -1;
+static int g_pitch_enable_disable_item = -1;
+static int g_pitch_gear_down_item = -1;
+
+static int g_roll_header_item = -1;
+static int g_roll_gear_up_item = -1;
+static int g_roll_enable_disable_item = -1;
+static int g_roll_gear_down_item = -1;
+
+static int g_rudder_header_item = -1;
+static int g_rudder_gear_up_item = -1;
+static int g_rudder_enable_disable_item = -1;
+static int g_rudder_gear_down_item = -1;
 
 // Forward declarations
 static void menu_handler(void* menu_ref, void* item_ref);
@@ -164,91 +175,161 @@ static void create_trim_commands()
 static void create_menu_system()
 {
     using namespace trimgear::constants;
-    
+
     if (!g_submenu_id) return;
-    
+
     // Add reload config option
-    XPLMAppendMenuItem(g_submenu_id, "Reload Configuration", 
+    XPLMAppendMenuItem(g_submenu_id, "Reload Configuration",
                       reinterpret_cast<void*>(MENU_RELOAD_CONFIG), 1);
-    
+
     // Add separator
     XPLMAppendMenuSeparator(g_submenu_id);
-    
+
     // Pitch trim section
-    XPLMAppendMenuItem(g_submenu_id, "Pitch Trim Gear:", nullptr, 0);
-    g_pitch_menu_items.reserve(NUM_GEAR_SETTINGS);
-    for (int i = 0; i < NUM_GEAR_SETTINGS; ++i) {
-        char label_buffer[32];
-        std::snprintf(label_buffer, sizeof(label_buffer), "  %.3f", GEAR_SETTINGS[i]);
-        std::string label = label_buffer;
-        int item_id = XPLMAppendMenuItem(g_submenu_id, label.c_str(), 
-                                        reinterpret_cast<void*>(MENU_PITCH_GEAR_START + i), 1);
-        g_pitch_menu_items.push_back(item_id);
-    }
-    
+    g_pitch_header_item = XPLMAppendMenuItem(g_submenu_id, "Pitch Trim Gear: 0.010 (2)", nullptr, 0);
+    g_pitch_gear_up_item = XPLMAppendMenuItem(g_submenu_id, "Gear Up (3) - 0.015",
+                                             reinterpret_cast<void*>(MENU_PITCH_GEAR_UP), 1);
+    g_pitch_enable_disable_item = XPLMAppendMenuItem(g_submenu_id, "Enabled",
+                                                    reinterpret_cast<void*>(MENU_PITCH_ENABLE_DISABLE), 1);
+    g_pitch_gear_down_item = XPLMAppendMenuItem(g_submenu_id, "Gear Down (1) - 0.005",
+                                               reinterpret_cast<void*>(MENU_PITCH_GEAR_DOWN), 1);
+
     // Add separator
     XPLMAppendMenuSeparator(g_submenu_id);
-    
+
     // Roll trim section
-    XPLMAppendMenuItem(g_submenu_id, "Roll Trim Gear:", nullptr, 0);
-    g_roll_menu_items.reserve(NUM_GEAR_SETTINGS);
-    for (int i = 0; i < NUM_GEAR_SETTINGS; ++i) {
-        char label_buffer[32];
-        std::snprintf(label_buffer, sizeof(label_buffer), "  %.3f", GEAR_SETTINGS[i]);
-        std::string label = label_buffer;
-        int item_id = XPLMAppendMenuItem(g_submenu_id, label.c_str(), 
-                                        reinterpret_cast<void*>(MENU_ROLL_GEAR_START + i), 1);
-        g_roll_menu_items.push_back(item_id);
-    }
-    
+    g_roll_header_item = XPLMAppendMenuItem(g_submenu_id, "Roll Trim Gear: 0.010 (2)", nullptr, 0);
+    g_roll_gear_up_item = XPLMAppendMenuItem(g_submenu_id, "Gear Up (3) - 0.015",
+                                            reinterpret_cast<void*>(MENU_ROLL_GEAR_UP), 1);
+    g_roll_enable_disable_item = XPLMAppendMenuItem(g_submenu_id, "Enabled",
+                                                   reinterpret_cast<void*>(MENU_ROLL_ENABLE_DISABLE), 1);
+    g_roll_gear_down_item = XPLMAppendMenuItem(g_submenu_id, "Gear Down (1) - 0.005",
+                                              reinterpret_cast<void*>(MENU_ROLL_GEAR_DOWN), 1);
+
     // Add separator
     XPLMAppendMenuSeparator(g_submenu_id);
-    
+
     // Rudder trim section
-    XPLMAppendMenuItem(g_submenu_id, "Rudder Trim Gear:", nullptr, 0);
-    g_rudder_menu_items.reserve(NUM_GEAR_SETTINGS);
-    for (int i = 0; i < NUM_GEAR_SETTINGS; ++i) {
-        char label_buffer[32];
-        std::snprintf(label_buffer, sizeof(label_buffer), "  %.3f", GEAR_SETTINGS[i]);
-        std::string label = label_buffer;
-        int item_id = XPLMAppendMenuItem(g_submenu_id, label.c_str(), 
-                                        reinterpret_cast<void*>(MENU_RUDDER_GEAR_START + i), 1);
-        g_rudder_menu_items.push_back(item_id);
-    }
+    g_rudder_header_item = XPLMAppendMenuItem(g_submenu_id, "Rudder Trim Gear: 0.010 (2)", nullptr, 0);
+    g_rudder_gear_up_item = XPLMAppendMenuItem(g_submenu_id, "Gear Up (3) - 0.015",
+                                              reinterpret_cast<void*>(MENU_RUDDER_GEAR_UP), 1);
+    g_rudder_enable_disable_item = XPLMAppendMenuItem(g_submenu_id, "Enabled",
+                                                     reinterpret_cast<void*>(MENU_RUDDER_ENABLE_DISABLE), 1);
+    g_rudder_gear_down_item = XPLMAppendMenuItem(g_submenu_id, "Gear Down (1) - 0.005",
+                                                reinterpret_cast<void*>(MENU_RUDDER_GEAR_DOWN), 1);
 }
 
 static void menu_handler(void*, void* item_ref)
 {
     using namespace trimgear::constants;
-    
+
     intptr_t item = reinterpret_cast<intptr_t>(item_ref);
-    
+
     if (item == MENU_RELOAD_CONFIG) {
         XPLMDebugString("TrimGear: Reloading configuration\n");
         load_aircraft_config();
         return;
     }
-    
-    // Handle gear selection
-    if (item >= MENU_PITCH_GEAR_START && item < MENU_PITCH_GEAR_START + NUM_GEAR_SETTINGS) {
-        int gear_index = item - MENU_PITCH_GEAR_START;
-        g_config->set_gear_setting(TrimAxis::PITCH, gear_index);
-        g_trim_controller->set_gear_setting(TrimAxis::PITCH, gear_index);
-        update_menu_checkmarks();
-    } else if (item >= MENU_ROLL_GEAR_START && item < MENU_ROLL_GEAR_START + NUM_GEAR_SETTINGS) {
-        int gear_index = item - MENU_ROLL_GEAR_START;
-        g_config->set_gear_setting(TrimAxis::ROLL, gear_index);
-        g_trim_controller->set_gear_setting(TrimAxis::ROLL, gear_index);
-        update_menu_checkmarks();
-    } else if (item >= MENU_RUDDER_GEAR_START && item < MENU_RUDDER_GEAR_START + NUM_GEAR_SETTINGS) {
-        int gear_index = item - MENU_RUDDER_GEAR_START;
-        g_config->set_gear_setting(TrimAxis::RUDDER, gear_index);
-        g_trim_controller->set_gear_setting(TrimAxis::RUDDER, gear_index);
-        update_menu_checkmarks();
+
+    // Handle gear up/down and enable/disable actions
+    bool config_changed = false;
+
+    switch (item) {
+        // Pitch trim controls
+        case MENU_PITCH_GEAR_UP: {
+            int current_gear = g_config->get_gear_setting(TrimAxis::PITCH);
+            if (current_gear < NUM_GEAR_SETTINGS - 1) {
+                int new_gear = current_gear + 1;
+                g_config->set_gear_setting(TrimAxis::PITCH, new_gear);
+                g_trim_controller->set_gear_setting(TrimAxis::PITCH, new_gear);
+                config_changed = true;
+            }
+            break;
+        }
+        case MENU_PITCH_GEAR_DOWN: {
+            int current_gear = g_config->get_gear_setting(TrimAxis::PITCH);
+            if (current_gear > 0) {
+                int new_gear = current_gear - 1;
+                g_config->set_gear_setting(TrimAxis::PITCH, new_gear);
+                g_trim_controller->set_gear_setting(TrimAxis::PITCH, new_gear);
+                config_changed = true;
+            }
+            break;
+        }
+        case MENU_PITCH_ENABLE_DISABLE: {
+            bool current_enabled = g_config->get_axis_enabled(TrimAxis::PITCH);
+            bool new_enabled = !current_enabled;
+            g_config->set_axis_enabled(TrimAxis::PITCH, new_enabled);
+            g_trim_controller->set_axis_enabled(TrimAxis::PITCH, new_enabled);
+            config_changed = true;
+            break;
+        }
+
+        // Roll trim controls
+        case MENU_ROLL_GEAR_UP: {
+            int current_gear = g_config->get_gear_setting(TrimAxis::ROLL);
+            if (current_gear < NUM_GEAR_SETTINGS - 1) {
+                int new_gear = current_gear + 1;
+                g_config->set_gear_setting(TrimAxis::ROLL, new_gear);
+                g_trim_controller->set_gear_setting(TrimAxis::ROLL, new_gear);
+                config_changed = true;
+            }
+            break;
+        }
+        case MENU_ROLL_GEAR_DOWN: {
+            int current_gear = g_config->get_gear_setting(TrimAxis::ROLL);
+            if (current_gear > 0) {
+                int new_gear = current_gear - 1;
+                g_config->set_gear_setting(TrimAxis::ROLL, new_gear);
+                g_trim_controller->set_gear_setting(TrimAxis::ROLL, new_gear);
+                config_changed = true;
+            }
+            break;
+        }
+        case MENU_ROLL_ENABLE_DISABLE: {
+            bool current_enabled = g_config->get_axis_enabled(TrimAxis::ROLL);
+            bool new_enabled = !current_enabled;
+            g_config->set_axis_enabled(TrimAxis::ROLL, new_enabled);
+            g_trim_controller->set_axis_enabled(TrimAxis::ROLL, new_enabled);
+            config_changed = true;
+            break;
+        }
+
+        // Rudder trim controls
+        case MENU_RUDDER_GEAR_UP: {
+            int current_gear = g_config->get_gear_setting(TrimAxis::RUDDER);
+            if (current_gear < NUM_GEAR_SETTINGS - 1) {
+                int new_gear = current_gear + 1;
+                g_config->set_gear_setting(TrimAxis::RUDDER, new_gear);
+                g_trim_controller->set_gear_setting(TrimAxis::RUDDER, new_gear);
+                config_changed = true;
+            }
+            break;
+        }
+        case MENU_RUDDER_GEAR_DOWN: {
+            int current_gear = g_config->get_gear_setting(TrimAxis::RUDDER);
+            if (current_gear > 0) {
+                int new_gear = current_gear - 1;
+                g_config->set_gear_setting(TrimAxis::RUDDER, new_gear);
+                g_trim_controller->set_gear_setting(TrimAxis::RUDDER, new_gear);
+                config_changed = true;
+            }
+            break;
+        }
+        case MENU_RUDDER_ENABLE_DISABLE: {
+            bool current_enabled = g_config->get_axis_enabled(TrimAxis::RUDDER);
+            bool new_enabled = !current_enabled;
+            g_config->set_axis_enabled(TrimAxis::RUDDER, new_enabled);
+            g_trim_controller->set_axis_enabled(TrimAxis::RUDDER, new_enabled);
+            config_changed = true;
+            break;
+        }
     }
-    
-    // Save configuration after any gear change
-    g_config->save_config();
+
+    if (config_changed) {
+        update_menu_checkmarks();
+        g_config->save_config();
+    }
 }
 
 static int trim_command_handler(XPLMCommandRef, XPLMCommandPhase phase, void* refcon)
@@ -279,7 +360,9 @@ static void load_aircraft_config()
             for (int axis = 0; axis < static_cast<int>(trimgear::constants::TrimAxis::COUNT); ++axis) {
                 trimgear::constants::TrimAxis trim_axis = static_cast<trimgear::constants::TrimAxis>(axis);
                 int gear_setting = g_config->get_gear_setting(trim_axis);
+                bool axis_enabled = g_config->get_axis_enabled(trim_axis);
                 g_trim_controller->set_gear_setting(trim_axis, gear_setting);
+                g_trim_controller->set_axis_enabled(trim_axis, axis_enabled);
             }
         }
         
@@ -290,27 +373,61 @@ static void load_aircraft_config()
 static void update_menu_checkmarks()
 {
     using namespace trimgear::constants;
-    
+
     if (!g_config || !g_submenu_id) return;
-    
-    // Update pitch gear checkmarks
-    int pitch_gear = g_config->get_gear_setting(TrimAxis::PITCH);
-    for (int i = 0; i < NUM_GEAR_SETTINGS && i < static_cast<int>(g_pitch_menu_items.size()); ++i) {
-        XPLMCheckMenuItem(g_submenu_id, g_pitch_menu_items[i], 
-                        (i == pitch_gear) ? xplm_Menu_Checked : xplm_Menu_Unchecked);
-    }
-    
-    // Update roll gear checkmarks
-    int roll_gear = g_config->get_gear_setting(TrimAxis::ROLL);
-    for (int i = 0; i < NUM_GEAR_SETTINGS && i < static_cast<int>(g_roll_menu_items.size()); ++i) {
-        XPLMCheckMenuItem(g_submenu_id, g_roll_menu_items[i], 
-                        (i == roll_gear) ? xplm_Menu_Checked : xplm_Menu_Unchecked);
-    }
-    
-    // Update rudder gear checkmarks
-    int rudder_gear = g_config->get_gear_setting(TrimAxis::RUDDER);
-    for (int i = 0; i < NUM_GEAR_SETTINGS && i < static_cast<int>(g_rudder_menu_items.size()); ++i) {
-        XPLMCheckMenuItem(g_submenu_id, g_rudder_menu_items[i], 
-                        (i == rudder_gear) ? xplm_Menu_Checked : xplm_Menu_Unchecked);
-    }
+
+    // Helper function to update axis display
+    auto update_axis_display = [&](TrimAxis axis, int header_item, int gear_up_item, int gear_down_item, int enable_disable_item, const char* axis_name) {
+        if (header_item == -1 || gear_up_item == -1 || gear_down_item == -1 || enable_disable_item == -1) return;
+
+        int current_gear = g_config->get_gear_setting(axis);
+        bool enabled = g_config->get_axis_enabled(axis);
+        float current_gear_value = GEAR_SETTINGS[current_gear];
+
+        // Update header with current gear info
+        char header_text[trimgear::constants::MENU_TEXT_BUFFER_SIZE];
+        int result = std::snprintf(header_text, sizeof(header_text), "%s: %.3f (%d)", axis_name, current_gear_value, current_gear);
+        if (result >= 0 && result < static_cast<int>(sizeof(header_text))) {
+            XPLMSetMenuItemName(g_submenu_id, header_item, header_text, 0);
+        }
+
+        // Update gear up button (show next gear if available)
+        if (current_gear < NUM_GEAR_SETTINGS - 1) {
+            int next_gear = current_gear + 1;
+            float next_gear_value = GEAR_SETTINGS[next_gear];
+            char gear_up_text[trimgear::constants::MENU_TEXT_BUFFER_SIZE];
+            result = std::snprintf(gear_up_text, sizeof(gear_up_text), "Gear Up (%d) - %.3f", next_gear, next_gear_value);
+            if (result >= 0 && result < static_cast<int>(sizeof(gear_up_text))) {
+                XPLMSetMenuItemName(g_submenu_id, gear_up_item, gear_up_text, 1);
+            }
+            XPLMEnableMenuItem(g_submenu_id, gear_up_item, 1);
+        } else {
+            XPLMSetMenuItemName(g_submenu_id, gear_up_item, "Gear Up (max)", 1);
+            XPLMEnableMenuItem(g_submenu_id, gear_up_item, 0);
+        }
+
+        // Update gear down button (show previous gear if available)
+        if (current_gear > 0) {
+            int prev_gear = current_gear - 1;
+            float prev_gear_value = GEAR_SETTINGS[prev_gear];
+            char gear_down_text[trimgear::constants::MENU_TEXT_BUFFER_SIZE];
+            result = std::snprintf(gear_down_text, sizeof(gear_down_text), "Gear Down (%d) - %.3f", prev_gear, prev_gear_value);
+            if (result >= 0 && result < static_cast<int>(sizeof(gear_down_text))) {
+                XPLMSetMenuItemName(g_submenu_id, gear_down_item, gear_down_text, 1);
+            }
+            XPLMEnableMenuItem(g_submenu_id, gear_down_item, 1);
+        } else {
+            XPLMSetMenuItemName(g_submenu_id, gear_down_item, "Gear Down (min)", 1);
+            XPLMEnableMenuItem(g_submenu_id, gear_down_item, 0);
+        }
+
+        // Update enable/disable button
+        XPLMSetMenuItemName(g_submenu_id, enable_disable_item, enabled ? "Enabled" : "Disabled", 1);
+        XPLMCheckMenuItem(g_submenu_id, enable_disable_item, enabled ? xplm_Menu_Checked : xplm_Menu_Unchecked);
+    };
+
+    // Update all three axes
+    update_axis_display(TrimAxis::PITCH, g_pitch_header_item, g_pitch_gear_up_item, g_pitch_gear_down_item, g_pitch_enable_disable_item, "Pitch Trim Gear");
+    update_axis_display(TrimAxis::ROLL, g_roll_header_item, g_roll_gear_up_item, g_roll_gear_down_item, g_roll_enable_disable_item, "Roll Trim Gear");
+    update_axis_display(TrimAxis::RUDDER, g_rudder_header_item, g_rudder_gear_up_item, g_rudder_gear_down_item, g_rudder_enable_disable_item, "Rudder Trim Gear");
 }

@@ -16,6 +16,9 @@ void Config::reset_to_defaults() {
     for (size_t i = 0; i < m_gear_settings.size(); ++i) {
         m_gear_settings[i] = trimgear::constants::DEFAULT_GEAR_INDEX;
     }
+    for (size_t i = 0; i < m_axis_enabled.size(); ++i) {
+        m_axis_enabled[i] = true; // Default to enabled
+    }
 }
 
 bool Config::load_config() {
@@ -113,6 +116,22 @@ int Config::get_gear_setting(trimgear::constants::TrimAxis axis) const {
     return m_gear_settings[axis_index];
 }
 
+void Config::set_axis_enabled(trimgear::constants::TrimAxis axis, bool enabled) {
+    std::size_t axis_index = static_cast<std::size_t>(axis);
+    if (axis_index >= m_axis_enabled.size()) {
+        return;
+    }
+    m_axis_enabled[axis_index] = enabled;
+}
+
+bool Config::get_axis_enabled(trimgear::constants::TrimAxis axis) const {
+    std::size_t axis_index = static_cast<std::size_t>(axis);
+    if (axis_index >= m_axis_enabled.size()) {
+        return true; // Default to enabled
+    }
+    return m_axis_enabled[axis_index];
+}
+
 std::string Config::get_aircraft_directory() const {
     char filename[trimgear::constants::XPLANE_PATH_BUFFER_SIZE];
     char path[trimgear::constants::XPLANE_PATH_BUFFER_SIZE];
@@ -164,12 +183,16 @@ bool Config::create_default_config() const {
     // Write default config with comments
     file << "# TrimGear Configuration File\n";
     file << "# \n";
-    file << "# This file stores the gear settings for each trim axis.\n";
-    file << "# Valid gear values are 1-5 (1=low gear, 5=high gear)\n";
+    file << "# This file stores the gear settings and enabled state for each trim axis.\n";
+    file << "# Gear values are 0-8 (0=0.001, 1=0.005, ..., 8=0.04)\n";
+    file << "# Enabled values are true or false\n";
     file << "# \n";
     file << "pitch_gear=" << trimgear::constants::DEFAULT_GEAR_INDEX << "\n";
+    file << "pitch_enabled=true\n";
     file << "roll_gear=" << trimgear::constants::DEFAULT_GEAR_INDEX << "\n";
+    file << "roll_enabled=true\n";
     file << "rudder_gear=" << trimgear::constants::DEFAULT_GEAR_INDEX << "\n";
+    file << "rudder_enabled=true\n";
     
     file.close();
     
@@ -211,19 +234,40 @@ bool Config::parse_config_line(const std::string& line) {
     value.erase(0, value.find_first_not_of(" \t"));
     
     // Parse gear settings
-    int gear_index;
-    try {
-        gear_index = std::stoi(value);
-    } catch (const std::exception&) {
-        return false;
+    if (key == "pitch_gear" || key == "roll_gear" || key == "rudder_gear") {
+        int gear_index;
+        try {
+            gear_index = std::stoi(value);
+        } catch (const std::exception&) {
+            return false;
+        }
+
+        if (key == "pitch_gear") {
+            set_gear_setting(trimgear::constants::TrimAxis::PITCH, gear_index);
+        } else if (key == "roll_gear") {
+            set_gear_setting(trimgear::constants::TrimAxis::ROLL, gear_index);
+        } else if (key == "rudder_gear") {
+            set_gear_setting(trimgear::constants::TrimAxis::RUDDER, gear_index);
+        }
     }
-    
-    if (key == "pitch_gear") {
-        set_gear_setting(trimgear::constants::TrimAxis::PITCH, gear_index);
-    } else if (key == "roll_gear") {
-        set_gear_setting(trimgear::constants::TrimAxis::ROLL, gear_index);
-    } else if (key == "rudder_gear") {
-        set_gear_setting(trimgear::constants::TrimAxis::RUDDER, gear_index);
+    // Parse enabled settings
+    else if (key == "pitch_enabled" || key == "roll_enabled" || key == "rudder_enabled") {
+        bool enabled;
+        if (value == "true" || value == "1") {
+            enabled = true;
+        } else if (value == "false" || value == "0") {
+            enabled = false;
+        } else {
+            return false;
+        }
+
+        if (key == "pitch_enabled") {
+            set_axis_enabled(trimgear::constants::TrimAxis::PITCH, enabled);
+        } else if (key == "roll_enabled") {
+            set_axis_enabled(trimgear::constants::TrimAxis::ROLL, enabled);
+        } else if (key == "rudder_enabled") {
+            set_axis_enabled(trimgear::constants::TrimAxis::RUDDER, enabled);
+        }
     } else {
         return false;
     }
@@ -237,11 +281,15 @@ std::string Config::generate_config_content() const {
     content << "# TrimGear Configuration File\n";
     content << "# Gear settings index (0-8) corresponding to values:\n";
     content << "# 0=0.001, 1=0.005, 2=0.01, 3=0.015, 4=0.02, 5=0.025, 6=0.03, 7=0.035, 8=0.04\n";
+    content << "# Enabled values are true or false\n";
     content << "\n";
-    
+
     content << "pitch_gear=" << get_gear_setting(trimgear::constants::TrimAxis::PITCH) << "\n";
+    content << "pitch_enabled=" << (get_axis_enabled(trimgear::constants::TrimAxis::PITCH) ? "true" : "false") << "\n";
     content << "roll_gear=" << get_gear_setting(trimgear::constants::TrimAxis::ROLL) << "\n";
+    content << "roll_enabled=" << (get_axis_enabled(trimgear::constants::TrimAxis::ROLL) ? "true" : "false") << "\n";
     content << "rudder_gear=" << get_gear_setting(trimgear::constants::TrimAxis::RUDDER) << "\n";
+    content << "rudder_enabled=" << (get_axis_enabled(trimgear::constants::TrimAxis::RUDDER) ? "true" : "false") << "\n";
     
     return content.str();
 }
