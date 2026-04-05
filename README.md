@@ -208,7 +208,3 @@ The plugin writes detailed logging to X-Plane's Log.txt file with prefix "TrimGe
 - X-Plane 12
 - Compatible joystick/trim hardware
 - Windows 10+, macOS 10.14+, or Linux with X11
-
-## License
-
-This project follows the same licensing as the multibind reference project.
